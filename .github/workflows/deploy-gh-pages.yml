@@ -10,6 +10,7 @@ on:
 
 jobs:
   build-and-deploy:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -38,3 +39,26 @@ jobs:
           user_name: 'github-actions[bot]'
           user_email: 'github-actions[bot]@users.noreply.github.com'
           allow_empty_commit: true
+
+  publish-to-main:
+    needs: build-and-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: true
+
+      - name: Copy built files to repo root
+        run: |
+          rm -rf ./assets || true
+          cp -r ./dist/* ./
+
+      - name: Commit and push built site to main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore(pages): publish built site to main" || echo "No changes to commit"
+          git push origin main
